@@ -1,111 +1,81 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import {
-  LoaderFunctionArgs,
-  RouterProvider,
-  createBrowserRouter,
-} from 'react-router-dom';
+import { createBrowserRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 
+import { paths } from '@/config/paths';
 import { ProtectedRoute } from '@/lib/auth';
 
-import { AppRoot } from './routes/app/root';
+import {
+  default as AppRoot,
+  ErrorBoundary as AppRootErrorBoundary,
+} from './routes/app/root';
+
+const convert = (queryClient: QueryClient) => (m: any) => {
+  const { clientLoader, clientAction, default: Component, ...rest } = m;
+  return {
+    ...rest,
+    loader: clientLoader?.(queryClient),
+    action: clientAction?.(queryClient),
+    Component,
+  };
+};
 
 export const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
-      path: '/',
-      lazy: async () => {
-        const { LandingRoute } = await import('./routes/landing');
-        return { Component: LandingRoute };
-      },
+      path: paths.home.path,
+      lazy: () => import('./routes/landing').then(convert(queryClient)),
     },
     {
-      path: '/auth/register',
-      lazy: async () => {
-        const { RegisterRoute } = await import('./routes/auth/register');
-        return { Component: RegisterRoute };
-      },
+      path: paths.auth.register.path,
+      lazy: () => import('./routes/auth/register').then(convert(queryClient)),
     },
     {
-      path: '/auth/login',
-      lazy: async () => {
-        const { LoginRoute } = await import('./routes/auth/login');
-        return { Component: LoginRoute };
-      },
+      path: paths.auth.login.path,
+      lazy: () => import('./routes/auth/login').then(convert(queryClient)),
     },
     {
-      path: '/app',
+      path: paths.app.root.path,
       element: (
         <ProtectedRoute>
           <AppRoot />
         </ProtectedRoute>
       ),
+      ErrorBoundary: AppRootErrorBoundary,
       children: [
         {
-          path: 'discussions',
-          lazy: async () => {
-            const { DiscussionsRoute } = await import(
-              './routes/app/discussions/discussions'
-            );
-            return { Component: DiscussionsRoute };
-          },
-          loader: async (args: LoaderFunctionArgs) => {
-            const { discussionsLoader } = await import(
-              './routes/app/discussions/discussions'
-            );
-            return discussionsLoader(queryClient)(args);
-          },
+          path: paths.app.discussions.path,
+          lazy: () =>
+            import('./routes/app/discussions/discussions').then(
+              convert(queryClient),
+            ),
         },
         {
-          path: 'discussions/:discussionId',
-          lazy: async () => {
-            const { DiscussionRoute } = await import(
-              './routes/app/discussions/discussion'
-            );
-            return { Component: DiscussionRoute };
-          },
-
-          loader: async (args: LoaderFunctionArgs) => {
-            const { discussionLoader } = await import(
-              './routes/app/discussions/discussion'
-            );
-            return discussionLoader(queryClient)(args);
-          },
+          path: paths.app.discussion.path,
+          lazy: () =>
+            import('./routes/app/discussions/discussion').then(
+              convert(queryClient),
+            ),
         },
         {
-          path: 'users',
-          lazy: async () => {
-            const { UsersRoute } = await import('./routes/app/users');
-            return { Component: UsersRoute };
-          },
-
-          loader: async () => {
-            const { usersLoader } = await import('./routes/app/users');
-            return usersLoader(queryClient)();
-          },
+          path: paths.app.users.path,
+          lazy: () => import('./routes/app/users').then(convert(queryClient)),
         },
         {
-          path: 'profile',
-          lazy: async () => {
-            const { ProfileRoute } = await import('./routes/app/profile');
-            return { Component: ProfileRoute };
-          },
+          path: paths.app.profile.path,
+          lazy: () => import('./routes/app/profile').then(convert(queryClient)),
         },
         {
-          path: '',
-          lazy: async () => {
-            const { DashboardRoute } = await import('./routes/app/dashboard');
-            return { Component: DashboardRoute };
-          },
+          path: paths.app.dashboard.path,
+          lazy: () =>
+            import('./routes/app/dashboard').then(convert(queryClient)),
         },
       ],
     },
     {
       path: '*',
-      lazy: async () => {
-        const { NotFoundRoute } = await import('./routes/not-found');
-        return { Component: NotFoundRoute };
-      },
+      lazy: () => import('./routes/not-found').then(convert(queryClient)),
     },
   ]);
 

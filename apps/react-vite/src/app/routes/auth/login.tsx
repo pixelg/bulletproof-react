@@ -1,9 +1,10 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { AuthLayout } from '@/components/layouts/auth-layout';
+import { paths } from '@/config/paths';
 import { LoginForm } from '@/features/auth/components/login-form';
 
-export const LoginRoute = () => {
+const LoginRoute = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirectTo');
@@ -11,12 +12,17 @@ export const LoginRoute = () => {
   return (
     <AuthLayout title="Log in to your account">
       <LoginForm
-        onSuccess={() =>
-          navigate(`${redirectTo ? `${redirectTo}` : '/app'}`, {
-            replace: true,
-          })
-        }
+        onSuccess={() => {
+          navigate(
+            `${redirectTo ? `${redirectTo}` : paths.app.dashboard.getHref()}`,
+            {
+              replace: true,
+            },
+          );
+        }}
       />
     </AuthLayout>
   );
 };
+
+export default LoginRoute;
